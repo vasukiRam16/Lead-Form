@@ -113,75 +113,78 @@
     </div>
 
     <script>
-        document.getElementById('leadForm').addEventListener('submit', function(event) {
-            event.preventDefault();
+        <script>
+    document.getElementById('leadForm').addEventListener('submit', function(event) {
+        event.preventDefault();
 
-            var leadData = {
-                lead_name: document.getElementById('first_name').value, // Map first_name to lead_name in ERPNext
-                last_name: document.getElementById('last_name').value,
-                gender: document.getElementById('gender').value,
-                email: document.getElementById('email').value,
-                mobile_no: document.getElementById('mobile_no').value,
-                source: document.getElementById('source').value,
-                type: document.getElementById('type').value // New field added
-            };
+        var leadData = {
+            lead_name: document.getElementById('first_name').value, // Map first_name to lead_name in ERPNext
+            last_name: document.getElementById('last_name').value,
+            gender: document.getElementById('gender').value,
+            email: document.getElementById('email').value,
+            mobile_no: document.getElementById('mobile_no').value,
+            source: document.getElementById('source').value,
+            type: document.getElementById('type').value // New field added
+        };
 
-            console.log('Submitting lead data:', leadData);
+        console.log('Submitting lead data:', leadData);
 
-            // Step 1: Check if the lead already exists
-            fetch(`http://192.168.1.4:8000/api/resource/Lead?filters=[["email","=","${leadData.email}"]]`, {
-                method: "GET",
+        // Step 1: Check if the lead already exists
+        fetch(`http://192.168.1.4:8000/api/resource/Lead?filters=[["email", "=", "${leadData.email}"]]`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "token f1b061bd272eee9:43702ead322652d"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("API Response:", data);
+
+            if (data.data && data.data.length > 0) {
+                document.getElementById('message').textContent = 'Lead with same data found';
+                document.getElementById('message').className = 'error';
+                return;
+            }
+
+            // Step 2: Create a new lead if not found
+            return fetch("http://192.168.1.4:8000/api/resource/Lead", {
+                method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": "token f1b061bd272eee9:43702ead322652d"
-                }
+                },
+                body: JSON.stringify(leadData)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (response.status === 409) {
+                    throw new Error("Lead with same data found");
+                }
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.json();
+            })
             .then(data => {
-                console.log("API Response:", data);
-
-                if (data.data && data.data.length > 0) {
-                    document.getElementById('message').textContent = 'Lead with same data found';
-                    document.getElementById('message').className = 'error';
-                    return;
-                }
-
-                // Step 2: Create a new lead if not found
-                return fetch("http://192.168.1.4:8000/api/resource/Lead", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": "token f1b061bd272eee9:43702ead322652d"
-                    },
-                    body: JSON.stringify(leadData)
-                })
-                .then(response => {
-                    if (response.status === 409) {
-                        throw new Error("Lead with same data found");
-                    }
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok ' + response.statusText);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Success:', data);
-                    document.getElementById('message').textContent = 'Lead Submitted Successfully!';
-                    document.getElementById('message').className = 'success';
-                    document.getElementById('leadForm').reset(); // Clear form
-                });
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                // Show user-friendly error message
-                if (error.message.includes("Lead with same data found")) {
-                    document.getElementById('message').textContent = 'Lead with same data found';
-                } else {
-                    document.getElementById('message').textContent = 'Error submitting lead. Please try again.';
-                }
-                document.getElementById('message').className = 'error';
+                console.log('Success:', data);
+                document.getElementById('message').textContent = 'Lead Submitted Successfully!';
+                document.getElementById('message').className = 'success';
+                document.getElementById('leadForm').reset(); // Clear form
             });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Show user-friendly error message
+            if (error.message.includes("Lead with same data found")) {
+                document.getElementById('message').textContent = 'Lead with same data found';
+            } else {
+                document.getElementById('message').textContent = 'Error submitting lead. Please try again.';
+            }
+            document.getElementById('message').className = 'error';
         });
+    });
+</script>
+
     </script>
 </body>
 </html>
