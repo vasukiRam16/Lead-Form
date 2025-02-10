@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lead Submission Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        h2 {
+            text-align: center;
+            font-size: 24px;
+        }
+        form {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            box-sizing: border-box;
+        }
+        label {
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        input[type="text"],
+        input[type="email"],
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .message {
+            text-align: center;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h2>Submit a Lead</h2>
+        <form id="leadForm">
+            <label for="first_name">First Name:</label>
+            <input type="text" id="first_name" name="first_name" required>
+
+            <label for="last_name">Last Name:</label>
+            <input type="text" id="last_name" name="last_name" required>
+
+            <label for="gender">Gender:</label>
+            <select id="gender" name="gender" required>
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+
+            <label for="mobile_no">Mobile No:</label>
+            <input type="text" id="mobile_no" name="mobile_no" required>
+
+            <label for="source">Source:</label>
+            <select id="source" name="source" required>
+                <option value="">Select Source</option>
+                <option value="Website">Website</option>
+                <option value="Referral">Referral</option>
+                <option value="Social Media">Social Media</option>
+            </select>
+
+            <label for="type">Type:</label>
+            <select id="type" name="type" required>
+                <option value="">Select Type</option>
+                <option value="Client">Client</option>
+                <option value="Channel Partner">Channel Partner</option>
+                <option value="Consultant">Consultant</option>
+            </select>
+
+            <button type="submit">Submit</button>
+        </form>
+        <p id="message" class="message"></p>
+    </div>
+
+    <script>
+        document.getElementById('leadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            var leadData = {
+                lead_name: document.getElementById('first_name').value, // Map first_name to lead_name in ERPNext
+                last_name: document.getElementById('last_name').value,
+                gender: document.getElementById('gender').value,
+                email: document.getElementById('email').value,
+                mobile_no: document.getElementById('mobile_no').value,
+                source: document.getElementById('source').value,
+                type: document.getElementById('type').value // New field added
+            };
+
+            console.log('Submitting lead data:', leadData);
+
+            // Step 1: Check if the lead already exists
+            fetch(`http://192.168.1.4:8000/api/resource/Lead?filters=[["email","=","${leadData.email}"]]`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "token f1b061bd272eee9:43702ead322652d"
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("API Response:", data);
+
+                if (data.data && data.data.length > 0) {
+                    document.getElementById('message').textContent = 'Lead with same data found';
+                    document.getElementById('message').className = 'error';
+                    return;
+                }
+
+                // Step 2: Create a new lead if not found
+                return fetch("http://192.168.1.4:8000/api/resource/Lead", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "token f1b061bd272eee9:43702ead322652d"
+                    },
+                    body: JSON.stringify(leadData)
+                })
+                .then(response => {
+                    if (response.status === 409) {
+                        throw new Error("Lead with same data found");
+                    }
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Success:', data);
+                    document.getElementById('message').textContent = 'Lead Submitted Successfully!';
+                    document.getElementById('message').className = 'success';
+                    document.getElementById('leadForm').reset(); // Clear form
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Show user-friendly error message
+                if (error.message.includes("Lead with same data found")) {
+                    document.getElementById('message').textContent = 'Lead with same data found';
+                } else {
+                    document.getElementById('message').textContent = 'Error submitting lead. Please try again.';
+                }
+                document.getElementById('message').className = 'error';
+            });
+        });
+    </script>
+</body>
+</html>
