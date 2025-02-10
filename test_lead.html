@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test CORS</title>
+</head>
+<body>
+    <button id="testButton">Test API</button>
+
+    <script>
+        document.getElementById('testButton').addEventListener('click', function() {
+            console.log('Button clicked');
+            fetch("http://192.168.1.4:8000/api/resource/Lead", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "token f1b061bd272eee9:43702ead322652d" // Replace with your actual token
+                },
+                body: JSON.stringify({
+                    lead_name: "Test Name",
+                    email_id: "test@example.com",
+                    source: "Website"
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
